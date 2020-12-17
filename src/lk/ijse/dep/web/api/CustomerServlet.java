@@ -8,10 +8,12 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.*;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * @author : Dhanusha Perera
@@ -24,9 +26,9 @@ public class CustomerServlet extends HttpServlet {
         /* Let's get the connection pool using the created key value pair */
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
 
-        resp.setHeader("Access-Control-Allow-Origin",CommonConstants.FRONTEND_URL);
-        resp.setContentType("application/xml");
-        try (PrintWriter out = resp.getWriter();) {
+        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+        resp.setContentType("application/json");
+        try (PrintWriter out = resp.getWriter()) {
 
             try {
                 Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
@@ -35,7 +37,7 @@ public class CustomerServlet extends HttpServlet {
                 Statement stm = connection.createStatement();
                 ResultSet rst = stm.executeQuery("SELECT * FROM customer");
 
-                out.println("<customers>");
+                String json = ("[");
 
                 while (rst.next()) {
                     int id = rst.getInt(1);
@@ -45,16 +47,18 @@ public class CustomerServlet extends HttpServlet {
                     String contact = rst.getString(5);
 
                     /* Generate the table data row */
-                    out.println("<customer>" +
-                            "<id>" + id + "</id>" +
-                            "<name>" + name + "</name>" +
-                            "<address>" + address + "</address>" +
-                            "<email>" + email + "</email>" +
-                            "<contact>" + contact + "</contact>" +
-                            "</customer>");
+                    json += ("{" +
+                            "\"id\":\"" + id + "\"," +
+                            "\"name\":\"" + name + "\"," +
+                            "\"address\":\"" + address + "\"," +
+                            "\"email\":\"" + email + "\"," +
+                            "\"contact\":\"" + contact + "\"" +
+                            "},");
                 }
 
-                out.println("</customers>");
+                json = json.substring(0,json.length()-1); // remove the last comma
+                json += ("]");
+                out.println(json);
                 connection.close();
 
             } catch (ClassNotFoundException | SQLException e) {
