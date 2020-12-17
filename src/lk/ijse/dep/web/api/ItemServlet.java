@@ -1,6 +1,9 @@
 package lk.ijse.dep.web.api;
 
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 import lk.ijse.dep.web.commonConstants.CommonConstants;
+import lk.ijse.dep.web.model.Item;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 import javax.servlet.ServletException;
@@ -10,10 +13,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author : Dhanusha Perera
@@ -27,7 +33,7 @@ public class ItemServlet extends HttpServlet {
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
 
         resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
-        resp.setContentType("application/xml");
+        resp.setContentType("application/json");
         try (PrintWriter out = resp.getWriter();) {
 
             try {
@@ -37,27 +43,23 @@ public class ItemServlet extends HttpServlet {
                 Statement stm = connection.createStatement();
                 ResultSet rst = stm.executeQuery("SELECT * FROM item");
 
-                out.println("<items>");
+                /* List */
+                List<Item> itemList = new ArrayList<>();
 
                 while (rst.next()) {
                     int id = rst.getInt(1);
                     String name = rst.getString(2);
                     int quantity = rst.getInt(3);
-                    String unitPrice = rst.getBigDecimal(4).setScale(2).toString();
+                    BigDecimal unitPrice = rst.getBigDecimal(4); // big decimal
                     String description = rst.getString(5);
 
-                    /* Generate the table data row */
-                    out.println("<item>" +
-                            "<id>" + id + "</id>" +
-                            "<name>" + name + "</name>" +
-                            "<quantity>" + quantity + "</quantity>" +
-                            "<unitPrice>" + unitPrice + "</unitPrice>" +
-                            "<description>" + description + "</description>" +
-                            "</item>");
+                    itemList.add(new Item(Integer.toString(id),name,description,quantity,unitPrice));
                 }
 
-                out.println("</items>");
-                /* ./table body */
+                // Create Jsonb and serialize
+                Jsonb jsonb = JsonbBuilder.create();
+
+                out.println(jsonb.toJson(itemList));
 
                 connection.close();
 
