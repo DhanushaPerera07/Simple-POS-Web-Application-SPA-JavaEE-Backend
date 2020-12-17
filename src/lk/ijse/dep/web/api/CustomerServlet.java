@@ -1,6 +1,9 @@
 package lk.ijse.dep.web.api;
 
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 import lk.ijse.dep.web.commonConstants.CommonConstants;
+import lk.ijse.dep.web.model.Customer;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 import javax.servlet.ServletException;
@@ -14,6 +17,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author : Dhanusha Perera
@@ -37,7 +42,8 @@ public class CustomerServlet extends HttpServlet {
                 Statement stm = connection.createStatement();
                 ResultSet rst = stm.executeQuery("SELECT * FROM customer");
 
-                String json = ("[");
+                List<Customer> customerList = new ArrayList<Customer>();
+
 
                 while (rst.next()) {
                     int id = rst.getInt(1);
@@ -46,19 +52,13 @@ public class CustomerServlet extends HttpServlet {
                     String email = rst.getString(4);
                     String contact = rst.getString(5);
 
-                    /* Generate the table data row */
-                    json += ("{" +
-                            "\"id\":\"" + id + "\"," +
-                            "\"name\":\"" + name + "\"," +
-                            "\"address\":\"" + address + "\"," +
-                            "\"email\":\"" + email + "\"," +
-                            "\"contact\":\"" + contact + "\"" +
-                            "},");
+                    customerList.add(new Customer(Integer.toString(id),name,address,email,contact));
                 }
 
-                json = json.substring(0,json.length()-1); // remove the last comma
-                json += ("]");
-                out.println(json);
+                // Create Jsonb and serialize
+                Jsonb jsonb = JsonbBuilder.create();
+
+                out.println(jsonb.toJson(customerList));
                 connection.close();
 
             } catch (ClassNotFoundException | SQLException e) {
