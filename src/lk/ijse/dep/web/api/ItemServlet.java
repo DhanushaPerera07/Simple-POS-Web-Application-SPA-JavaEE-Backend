@@ -27,40 +27,18 @@ public class ItemServlet extends HttpServlet {
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
 
         resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
-        resp.setContentType("text/html");
+        resp.setContentType("application/xml");
         try (PrintWriter out = resp.getWriter();) {
-            out.println("<div>");
-
-            out.println("<h1>Item servlet !</h1>");
-//            out.println("<h2>"+ getServletContext().getAttribute("cp") +"</h2>");
-
 
             try {
                 Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
                 Connection connection = cp.getConnection();
-//                Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/ijse", "root", "root");
+
                 Statement stm = connection.createStatement();
                 ResultSet rst = stm.executeQuery("SELECT * FROM item");
 
-                /* table */
-                out.println("<table style='border-collapse: collapse; border: 1px solid black;'>");
+                out.println("<items>");
 
-                /* table header */
-                out.println("<thead>");
-                out.println("<tr>");
-                out.println("<th>ID</th>");
-                out.println("<th>Name</th>");
-                out.println("<th>Quantity</th>");
-                out.println("<th>Unit Price</th>");
-                out.println("<th>Description</th>");
-                out.println("</tr>");
-                out.println("</thead>");
-                /* ./table header */
-
-
-
-                /* table body */
-                out.println("<tbody>");
                 while (rst.next()) {
                     int id = rst.getInt(1);
                     String name = rst.getString(2);
@@ -69,23 +47,19 @@ public class ItemServlet extends HttpServlet {
                     String description = rst.getString(5);
 
                     /* Generate the table data row */
-                    out.println("<tr>" +
-                            "<td>" + id + "</td>" +
-                            "<td>" + name + "</td>" +
-                            "<td>" + quantity + "</td>" +
-                            "<td>" + unitPrice + "</td>" +
-                            "<td>" + description + "</td>" +
-                            "</tr>");
+                    out.println("<item>" +
+                            "<id>" + id + "</id>" +
+                            "<name>" + name + "</name>" +
+                            "<quantity>" + quantity + "</quantity>" +
+                            "<unitPrice>" + unitPrice + "</unitPrice>" +
+                            "<description>" + description + "</description>" +
+                            "</item>");
                 }
 
-                out.println("</tbody>");
+                out.println("</items>");
                 /* ./table body */
 
                 connection.close();
-                out.println("</table>");
-                /* ./table */
-
-                out.println("</div>");
 
             } catch (ClassNotFoundException | SQLException e) {
                 e.printStackTrace();

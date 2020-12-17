@@ -24,45 +24,19 @@ public class CustomerServlet extends HttpServlet {
         /* Let's get the connection pool using the created key value pair */
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
 
-        /* To get no of active connections */
-//        System.out.println(cp.getNumActive());
-//        System.out.println(cp.getNumIdle());
-
         resp.setHeader("Access-Control-Allow-Origin",CommonConstants.FRONTEND_URL);
-        resp.setContentType("text/html");
+        resp.setContentType("application/xml");
         try (PrintWriter out = resp.getWriter();) {
-            out.println("<div>");
-
-            out.println("<h1>Customer servlet !</h1>");
-//            out.println("<h2>"+ getServletContext().getAttribute("cp") +"</h2>");
-
 
             try {
                 Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
                 Connection connection = cp.getConnection();
-//                Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/ijse", "root", "root");
+
                 Statement stm = connection.createStatement();
                 ResultSet rst = stm.executeQuery("SELECT * FROM customer");
 
-                /* table */
-                out.println("<table style='border-collapse: collapse; border: 1px solid black;'>");
+                out.println("<customers>");
 
-                /* table header */
-                out.println("<thead>");
-                out.println("<tr>");
-                out.println("<th>ID</th>");
-                out.println("<th>Name</th>");
-                out.println("<th>Address</th>");
-                out.println("<th>Email</th>");
-                out.println("<th>Contact</th>");
-                out.println("</tr>");
-                out.println("</thead>");
-                /* ./table header */
-
-
-
-                /* table body */
-                out.println("<tbody>");
                 while (rst.next()) {
                     int id = rst.getInt(1);
                     String name = rst.getString(2);
@@ -71,23 +45,17 @@ public class CustomerServlet extends HttpServlet {
                     String contact = rst.getString(5);
 
                     /* Generate the table data row */
-                    out.println("<tr>" +
-                            "<td>" + id + "</td>" +
-                            "<td>" + name + "</td>" +
-                            "<td>" + address + "</td>" +
-                            "<td>" + email + "</td>" +
-                            "<td>" + contact + "</td>" +
-                            "</tr>");
+                    out.println("<customer>" +
+                            "<id>" + id + "</id>" +
+                            "<name>" + name + "</name>" +
+                            "<address>" + address + "</address>" +
+                            "<email>" + email + "</email>" +
+                            "<contact>" + contact + "</contact>" +
+                            "</customer>");
                 }
 
-                out.println("</tbody>");
-                /* ./table body */
-
+                out.println("</customers>");
                 connection.close();
-                out.println("</table>");
-                /* ./table */
-
-                out.println("</div>");
 
             } catch (ClassNotFoundException | SQLException e) {
                 e.printStackTrace();
