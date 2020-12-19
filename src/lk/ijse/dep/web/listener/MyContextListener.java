@@ -53,6 +53,7 @@ public class MyContextListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
 //        System.out.println("Context is being initialized");
+
         BasicDataSource bds = new BasicDataSource();
         bds.setUsername(CommonConstants.MYSQL_USER_NAME);
         bds.setPassword(CommonConstants.MYSQL_PASSWORD);

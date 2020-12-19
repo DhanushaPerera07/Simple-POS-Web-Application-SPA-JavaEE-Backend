@@ -90,4 +90,15 @@ public class Customer {
     public void setContact(String contact) {
         this.contact = contact;
     }
+
+    @Override
+    public String toString() {
+        return "Customer{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", address='" + address + '\'' +
+                ", email='" + email + '\'' +
+                ", contact='" + contact + '\'' +
+                '}';
+    }
 }
