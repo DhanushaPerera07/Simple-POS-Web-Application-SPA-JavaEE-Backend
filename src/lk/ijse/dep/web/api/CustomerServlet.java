@@ -203,13 +203,46 @@ public class CustomerServlet extends HttpServlet {
             return;
         }
 
-        Jsonb jsonb = JsonbBuilder.create();
-        Customer customer = jsonb.fromJson(req.getReader(), Customer.class);
-
+        /* Database connection config - db connection pool */
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
+
         try {
+
+            /* Database connection */
             Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
             Connection connection = cp.getConnection();
+
+            /* JSONb */
+            Jsonb jsonb = JsonbBuilder.create();
+            Customer customer = jsonb.fromJson(req.getReader(), Customer.class);
+
+            /* Validation part - check null */
+            if (customer.getId() != null || customer.getName() == null || customer.getAddress() == null || customer.getContact() == null || customer.getEmail() == null) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
+            /* Validation part */
+            if (!customer.getEmail().matches("^(.+)@(.+)$") ||
+                    customer.getName().trim().isEmpty() ||
+                    customer.getAddress().trim().isEmpty() ||
+                    !customer.getContact().trim().matches("\\d{10}")
+            ) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
+            /* Check if there is a record for the given ID */
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM customer WHERE id=?");
+            preparedStatement.setObject(1, id);
+
+            /* if customer does not exists for that ID */
+            if (!(preparedStatement.executeQuery().next())){
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+
+            /* Database operation - update customer record */
             PreparedStatement pstm = connection.prepareStatement("UPDATE customer SET name=?,address=?, email=?,contact=? WHERE id=?");
             pstm.setObject(1, customer.getName());
             pstm.setObject(2, customer.getAddress());
@@ -217,6 +250,7 @@ public class CustomerServlet extends HttpServlet {
             pstm.setObject(4, customer.getContact());
             pstm.setObject(5, id);
 
+            /* result of the update operation */
             boolean success = pstm.executeUpdate() > 0;
 
             if (success) {
@@ -224,8 +258,15 @@ public class CustomerServlet extends HttpServlet {
             } else {
                 resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
-        } catch (SQLException | ClassNotFoundException throwables) {
+        } catch (ClassNotFoundException throwables) {
             throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (JsonbException throwables) {
+            throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
         }
 
 
