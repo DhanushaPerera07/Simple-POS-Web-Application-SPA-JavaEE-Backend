@@ -2,6 +2,7 @@ package lk.ijse.dep.web.api;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
 import lk.ijse.dep.web.commonConstants.CommonConstants;
 import lk.ijse.dep.web.model.Customer;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -13,10 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,37 +99,65 @@ public class CustomerServlet extends HttpServlet {
         Jsonb jsonb = JsonbBuilder.create();
         Customer customer = jsonb.fromJson(json, Customer.class);*/
 
-        Jsonb jsonb = JsonbBuilder.create();
-        Customer customer = jsonb.fromJson(req.getReader(), Customer.class);
-
+        /* CORS policy */
         resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
-        resp.setContentType("application/json");
 
-        // TODO: save customer in the database
+        resp.setContentType("application/json");
         BasicDataSource bds = (BasicDataSource) getServletContext().getAttribute("cp");
 
         try {
             Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
-            Connection connection = bds.getConnection();
-            PreparedStatement pstm = connection.prepareStatement("INSERT INTO `customer` (`name`,`address`,`email`,`contact`) VALUES (?,?,?,?);");
+
+            try (Connection connection = bds.getConnection()) {
+                Jsonb jsonb = JsonbBuilder.create();
+                Customer customer = jsonb.fromJson(req.getReader(), Customer.class);
+
+                /* Validation part - check null */
+                if (customer.getName() == null || customer.getAddress() == null || customer.getContact() == null || customer.getEmail() == null) {
+                    resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+
+                /* Validation part */
+                if (!customer.getEmail().matches("^(.+)@(.+)$") ||
+                        customer.getName().trim().isEmpty() ||
+                        customer.getAddress().trim().isEmpty() ||
+                        !customer.getContact().trim().matches("\\d{10}")
+                ) {
+                    resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+
+                PreparedStatement pstm = connection.prepareStatement("INSERT INTO `customer` (`name`,`address`,`email`,`contact`) VALUES (?,?,?,?);");
 //            pstm.setObject(1, customer.getId());
-            pstm.setObject(1, customer.getName());
-            pstm.setObject(2, customer.getAddress());
-            pstm.setObject(3, customer.getEmail());
-            pstm.setObject(4, customer.getContact());
+                pstm.setObject(1, customer.getName());
+                pstm.setObject(2, customer.getAddress());
+                pstm.setObject(3, customer.getEmail());
+                pstm.setObject(4, customer.getContact());
 
-            boolean success = pstm.executeUpdate() > 0;
+                /* Check inserted successfully or not */
+                if (pstm.executeUpdate() > 0) {
+                    /* insertion successful */
+                    resp.setStatus(HttpServletResponse.SC_CREATED);
+//                    resp.getWriter().println(jsonb.toJson(true));
+                } else {
+                    /* insertion unsuccessful */
+                    resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+//                    resp.getWriter().println(jsonb.toJson(false));
+                }
 
-            if (success) {
-                resp.getWriter().println(jsonb.toJson(true));
-            } else {
-                resp.getWriter().println(jsonb.toJson(false));
+            } catch (SQLIntegrityConstraintViolationException throwables) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                throwables.printStackTrace();
+            } catch (SQLException throwables) {
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                throwables.printStackTrace();
+            } catch (JsonbException throwables) {
+                throwables.printStackTrace();
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
             }
-
-            connection.close();
-        } catch (SQLException | ClassNotFoundException throwables) {
-            throwables.printStackTrace();
-            resp.getWriter().println(jsonb.toJson(false));
+        } catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
         }
 
     }//doPost
@@ -165,7 +191,17 @@ public class CustomerServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        /* CORS policy */
+        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+
         String id = req.getParameter("id");
+
+        /* Validation */
+        if (id == null || id.trim().isEmpty() || !id.trim().matches("\\d+")) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
 
         Jsonb jsonb = JsonbBuilder.create();
         Customer customer = jsonb.fromJson(req.getReader(), Customer.class);
