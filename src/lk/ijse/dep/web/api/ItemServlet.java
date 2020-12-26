@@ -28,6 +28,13 @@ import java.util.List;
 @WebServlet(name = "ItemServlet", urlPatterns = "/items")
 public class ItemServlet extends HttpServlet {
 
+    @Override
+    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+        resp.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        resp.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+    }
+
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
         /* Let's the id from the request header */
