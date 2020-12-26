@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author : Dhanusha Perera
+ * @author : Dhanusha Pererḁ
  * @since : 11/12/2020
  **/
 @WebServlet(name = "CustomerServlet", urlPatterns = "/customers")
@@ -33,6 +33,7 @@ public class CustomerServlet extends HttpServlet {
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
+        /* Let's the id from the request header */
         String customerID = req.getParameter("id");
 
         /* CORS policy */
@@ -47,15 +48,20 @@ public class CustomerServlet extends HttpServlet {
             Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
 
             try (Connection connection = cp.getConnection()) {
-                PreparedStatement pstm = connection.prepareStatement("SELECT * FROM customer" + ((customerID != null) ? " WHERE id=?" : ""));
+                /* if customer id is passed in the GET request that means,
+                 * record for that particular ID should be retrieved from the database, otherwise;
+                 * all the customers in the database are retrieved */
+                PreparedStatement pstm = connection.prepareStatement("SELECT * FROM customer" +
+                        ((customerID != null) ? " WHERE id=?" : ""));
                 if (customerID != null) {
                     pstm.setObject(1, customerID);
                 }
                 ResultSet rst = pstm.executeQuery();
 
+                /* Let's take the result set to a customer array */
                 List<Customer> customerList = new ArrayList<Customer>();
 
-
+                /* Let's go through the result set */
                 while (rst.next()) {
                     int id = rst.getInt(1);
                     String name = rst.getString(2);
@@ -66,12 +72,18 @@ public class CustomerServlet extends HttpServlet {
                     customerList.add(new Customer(Integer.toString(id), name, address, email, contact));
                 }
 
+                /* If customerID is not null, that means there is a customer ID, somehow it is a valid one.
+                 * But, customerList is empty; that means for that given ID no result found / no matching records found.
+                 * So, it is good to let the client know that there is no result for that request.
+                 * To do that, we can send "404 - Not Found" error */
                 if (customerID != null && customerList.isEmpty()) {
 //                    resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
                     resp.sendError(HttpServletResponse.SC_NOT_FOUND);
                 } else {
-                    // Create Jsonb and serialize
+                    /* Create Jsonb and serialize */
                     Jsonb jsonb = JsonbBuilder.create();
+                    /* Let's make the customerList to a JSON format
+                     * and, send the JSON to the client */
                     out.println(jsonb.toJson(customerList));
                 }
             } catch (SQLException throwables) {
@@ -205,7 +217,7 @@ public class CustomerServlet extends HttpServlet {
                     resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 }
 
-            }catch (SQLIntegrityConstraintViolationException throwables) {
+            } catch (SQLIntegrityConstraintViolationException throwables) {
                 throwables.printStackTrace();
                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             } catch (SQLException throwables) {
