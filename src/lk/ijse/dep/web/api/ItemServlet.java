@@ -82,7 +82,7 @@ public class ItemServlet extends HttpServlet {
                 } else {
                     /* Create Jsonb and serialize */
                     Jsonb jsonb = JsonbBuilder.create();
-                    /* Let's make the customerList to a JSON format
+                    /* Let's make the itemList to a JSON format
                      * and, send the JSON to the client */
                     out.println(jsonb.toJson(itemList));
                 }
@@ -135,7 +135,7 @@ public class ItemServlet extends HttpServlet {
                 }
 
                 PreparedStatement pstm = connection.prepareStatement("INSERT INTO `item` (`name`,`qty`,`unit_price`,`description`) VALUES (?,?,?,?);");
-//            pstm.setObject(1, customer.getId());
+//            pstm.setObject(1, item.getId());
                 pstm.setObject(1, item.getName());
                 pstm.setObject(2, item.getQuantity());
                 pstm.setObject(3, item.getUnitPrice());
@@ -191,7 +191,7 @@ public class ItemServlet extends HttpServlet {
                 PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM `item` WHERE id=?");
                 preparedStatement.setObject(1, id);
 
-                /* if customer does not exists for that ID, send NOT_FOUND error */
+                /* if item does not exists for that ID, send NOT_FOUND error */
                 if (!(preparedStatement.executeQuery().next())) {
                     resp.sendError(HttpServletResponse.SC_NOT_FOUND);
                     return;
@@ -222,4 +222,94 @@ public class ItemServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }// doDelete
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        /* CORS policy */
+        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+
+        /* Get the id from the request header */
+        String id = req.getParameter("id");
+
+        /* ID Validation */
+        if (id == null || id.trim().isEmpty() || !id.trim().matches("\\d+")) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
+        /* Database connection config - db connection pool */
+        BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
+
+        try {
+
+            /* Database connection */
+            Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
+            Connection connection = cp.getConnection();
+
+            /* JSONb */
+            Jsonb jsonb = JsonbBuilder.create();
+            Item item = jsonb.fromJson(req.getReader(), Item.class);
+
+            /* Validation part - check for null and negative numbers */
+            if (item.getName() == null ||
+                    item.getQuantity() < 0 ||
+                    item.getUnitPrice() == null ||
+                    item.getDescription() == null
+            ) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
+            /* Validation part */
+            if (!item.getUnitPrice().toString().matches("^\\d+|(\\d)+(.)\\d{2}|\\d$") ||
+                    item.getName().trim().isEmpty() ||
+                    item.getDescription().trim().isEmpty()
+            ) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
+            /* Check if there is a record for the given ID */
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM `item` WHERE `id`=?");
+            preparedStatement.setObject(1, id);
+
+            /* if item does not exists for that ID */
+            if (!(preparedStatement.executeQuery().next())) {
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+
+            /* Database operation - update item record */
+            PreparedStatement pstm = connection.prepareStatement("UPDATE `item` SET `name`=?,`qty`=?, `unit_price`=?,`description`=? WHERE id=?");
+            pstm.setObject(1, item.getName());
+            pstm.setObject(2, item.getQuantity());
+            pstm.setObject(3, item.getUnitPrice());
+            pstm.setObject(4, item.getDescription());
+            pstm.setObject(5, id); // the ID got from the request header
+
+            /* result of the update operation */
+            boolean success = pstm.executeUpdate() > 0;
+
+            if (success) {
+                /* Send success status code to the client */
+                resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            } else {
+                /* That means something went wrong,
+                send error status code to the client */
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+        } catch (ClassNotFoundException throwables) {
+            throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        } catch (JsonbException throwables) {
+            throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+        }
+
+
+    } //doPut
 }
