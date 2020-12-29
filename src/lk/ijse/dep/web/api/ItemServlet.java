@@ -166,4 +166,60 @@ public class ItemServlet extends HttpServlet {
             ex.printStackTrace();
         }
     }// doPost
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        /* CORS policy */
+        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+
+        String id = req.getParameter("id");
+
+        /* ID Validation */
+        if (id == null || id.trim().isEmpty() || !id.trim().matches("\\d+")) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
+        /* Connection Pool */
+        BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
+
+        try {
+            Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
+            try (Connection connection = cp.getConnection()) {
+
+                /* Check if there is a record for the given ID */
+                PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM `item` WHERE id=?");
+                preparedStatement.setObject(1, id);
+
+                /* if customer does not exists for that ID, send NOT_FOUND error */
+                if (!(preparedStatement.executeQuery().next())) {
+                    resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+                    return;
+                }
+
+                /* Database operation - delete item record */
+                PreparedStatement pstm = connection.prepareStatement("DELETE FROM `item` WHERE `id` = ?");
+                pstm.setObject(1, id);
+
+                /* get the result */
+                boolean success = pstm.executeUpdate() > 0;
+                if (success) {
+                    /* deleted successfully ---> 204 status code */
+                    resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                } else {
+                    resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                }
+
+            } catch (SQLIntegrityConstraintViolationException throwables) {
+                throwables.printStackTrace();
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+                resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+        } catch (ClassNotFoundException throwables) {
+            throwables.printStackTrace();
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }// doDelete
 }
