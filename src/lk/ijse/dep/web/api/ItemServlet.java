@@ -2,6 +2,7 @@ package lk.ijse.dep.web.api;
 
 import jakarta.json.bind.Jsonb;
 import jakarta.json.bind.JsonbBuilder;
+import jakarta.json.bind.JsonbException;
 import lk.ijse.dep.web.commonConstants.CommonConstants;
 import lk.ijse.dep.web.model.Item;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -14,10 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +31,7 @@ public class ItemServlet extends HttpServlet {
         resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
         resp.setHeader("Access-Control-Allow-Headers", "Content-Type");
         resp.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
-    }
+    }// doOptions
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
@@ -100,5 +98,72 @@ public class ItemServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    }// doGet
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        /* CORS policy */
+        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+
+        resp.setContentType("application/json");
+        BasicDataSource bds = (BasicDataSource) getServletContext().getAttribute("cp");
+
+        try {
+            Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
+
+            try (Connection connection = bds.getConnection()) {
+                Jsonb jsonb = JsonbBuilder.create();
+                Item item = jsonb.fromJson(req.getReader(), Item.class);
+
+                /* Validation part - check for null and negative numbers */
+                if (item.getName() == null ||
+                        item.getQuantity() < 0 ||
+                        item.getUnitPrice() == null ||
+                        item.getDescription() == null
+                ) {
+                    resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+
+                /* Validation part */
+                if (!item.getUnitPrice().toString().matches("^\\d+|(\\d)+(.)\\d{2}|\\d$") ||
+                        item.getName().trim().isEmpty() ||
+                        item.getDescription().trim().isEmpty()
+                ) {
+                    resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+
+                PreparedStatement pstm = connection.prepareStatement("INSERT INTO `item` (`name`,`qty`,`unit_price`,`description`) VALUES (?,?,?,?);");
+//            pstm.setObject(1, customer.getId());
+                pstm.setObject(1, item.getName());
+                pstm.setObject(2, item.getQuantity());
+                pstm.setObject(3, item.getUnitPrice());
+                pstm.setObject(4, item.getDescription());
+
+                /* Check inserted successfully or not */
+                if (pstm.executeUpdate() > 0) {
+                    /* insertion successful */
+                    resp.setStatus(HttpServletResponse.SC_CREATED);
+//                    resp.getWriter().println(jsonb.toJson(true));
+                } else {
+                    /* insertion unsuccessful */
+                    resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+//                    resp.getWriter().println(jsonb.toJson(false));
+                }
+
+            } catch (SQLIntegrityConstraintViolationException throwables) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                throwables.printStackTrace();
+            } catch (SQLException throwables) {
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                throwables.printStackTrace();
+            } catch (JsonbException throwables) {
+                throwables.printStackTrace();
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            }
+        } catch (ClassNotFoundException ex) {
+            ex.printStackTrace();
+        }
+    }// doPost
 }
