@@ -22,6 +22,14 @@ import java.sql.Statement;
 @WebServlet(name = "PlaceOrderServlet", urlPatterns = "/place-orders")
 public class PlaceOrderServlet extends HttpServlet {
 
+    @Override
+    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+        resp.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        resp.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
+    }// doOptions
+
+
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         /* Let's get the connection pool using the created key value pair */
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
