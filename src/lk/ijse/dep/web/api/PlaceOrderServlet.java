@@ -162,9 +162,7 @@ public class PlaceOrderServlet extends HttpServlet {
                     }
 
                     /* Validation part */
-                    if (!item.getUnitPrice().toString().matches("^\\d+|(\\d)+(.)\\d{2}|\\d$") ||
-                            item.getName().trim().isEmpty() ||
-                            item.getDescription().trim().isEmpty()
+                    if (!item.getUnitPrice().toString().matches("^\\d+|(\\d)+(.)\\d{2}|\\d$")
                     ) {
                         resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
                         return;
