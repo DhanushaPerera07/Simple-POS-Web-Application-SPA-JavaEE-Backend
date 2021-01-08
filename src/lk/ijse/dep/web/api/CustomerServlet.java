@@ -24,12 +24,15 @@ import java.util.List;
  **/
 @WebServlet(name = "CustomerServlet", urlPatterns = "/customers")
 public class CustomerServlet extends HttpServlet {
-    @Override
+
+    /* Since, we set the required headers in the CorsFilter,
+    * We do not have to config the doOption method */
+/*    @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
         resp.setHeader("Access-Control-Allow-Headers", "Content-Type");
         resp.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE");
-    }//doOptions
+    }//doOptions*/
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
@@ -37,7 +40,7 @@ public class CustomerServlet extends HttpServlet {
         String customerID = req.getParameter("id");
 
         /* CORS policy */
-        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+        /*resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);*/
 
         /* Let's get the connection pool using the created key value pair */
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
@@ -113,7 +116,7 @@ public class CustomerServlet extends HttpServlet {
         Customer customer = jsonb.fromJson(json, Customer.class);*/
 
         /* CORS policy */
-        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+        /*resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);*/
 
         resp.setContentType("application/json");
         BasicDataSource bds = (BasicDataSource) getServletContext().getAttribute("cp");
@@ -179,7 +182,7 @@ public class CustomerServlet extends HttpServlet {
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
         /* CORS policy */
-        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+        /*resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);*/
 
         String id = req.getParameter("id");
 
@@ -235,7 +238,7 @@ public class CustomerServlet extends HttpServlet {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
         /* CORS policy */
-        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+        /*resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);*/
 
         String id = req.getParameter("id");
 
