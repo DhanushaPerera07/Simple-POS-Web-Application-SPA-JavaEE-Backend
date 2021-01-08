@@ -124,9 +124,25 @@ public class CustomerServlet extends HttpServlet {
         try {
             Class.forName(CommonConstants.MYSQL_DRIVER_CLASS_NAME);
 
+                Customer customer;
             try (Connection connection = bds.getConnection()) {
-                Jsonb jsonb = JsonbBuilder.create();
-                Customer customer = jsonb.fromJson(req.getReader(), Customer.class);
+                if (req.getContentType().equals("application/json")) {
+                    /* application/x-www-form-urlencoded */
+                    Jsonb jsonb = JsonbBuilder.create();
+                    customer = jsonb.fromJson(req.getReader(), Customer.class);
+                } else if (req.getContentType().equals("application/x-www-form-urlencoded")){
+                    /* application/x-www-form-urlencoded */
+                    customer = new Customer("", // ID is auto generated
+                            req.getParameter("name"),
+                            req.getParameter("address"),
+                            req.getParameter("email"),
+                            req.getParameter("contact"));
+
+                } else {
+                    /* other ContentTypes are not acceptable */
+                    resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
 
                 /* Validation part - check null */
                 if (customer.getName() == null || customer.getAddress() == null || customer.getContact() == null || customer.getEmail() == null) {
