@@ -29,14 +29,11 @@ import java.util.List;
 
 @WebServlet(name = "OrderServlet", urlPatterns = "/orders")
 public class OrderServlet extends HttpServlet {
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        response.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
-    }
 
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
         /* CORS policy */
-        resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);
+        /*resp.setHeader("Access-Control-Allow-Origin", CommonConstants.FRONTEND_URL);*/
 
         /* Let's get the connection pool using the created key value pair */
         BasicDataSource cp = (BasicDataSource) getServletContext().getAttribute("cp");
@@ -134,5 +131,19 @@ public class OrderServlet extends HttpServlet {
 
 
     }//doGet
+
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED);
+    }
 
 }
